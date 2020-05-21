@@ -1,0 +1,4 @@
+- hosts: "k8s*"
+  roles:
+    - init-server
+    - docker

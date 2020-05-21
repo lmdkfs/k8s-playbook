@@ -1,0 +1,35 @@
+[Unit]
+Description=Etcd Server
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+#EnvironmentFile={{ project_config_path }}/cfg/etcd
+ExecStart={{ project_bin_path }}/etcd \
+{% for item in etcd_hosts -%}
+{%- if item.ip == NODE_ADDRESS -%}
+--name {{ item.name }} \
+{% endif %} 
+{%- endfor %}
+--data-dir {{ etcd_cluster_data_dir }} \
+--initial-advertise-peer-urls https://{{ NODE_ADDRESS }}:2380 \
+--listen-peer-urls https://{{ NODE_ADDRESS }}:2380 \
+--listen-client-urls https://{{ NODE_ADDRESS }}:2379,http://127.0.0.1:2379 \
+--advertise-client-urls https://{{ NODE_ADDRESS }}:2379 \
+--initial-cluster-token "etcd-cluster" \
+--initial-cluster {% for item in etcd_hosts %}{{ item.name }}=https://{{ item.ip }}:2380{% if not loop.last %},{% endif %}{% endfor %} \
+--initial-cluster-state new \
+--cert-file {{ project_config_path }}/ssl/server.pem \
+--key-file {{ project_config_path }}/ssl/server-key.pem \
+--peer-cert-file {{ project_config_path }}/ssl/server.pem \
+--peer-key-file {{ project_config_path }}/ssl/server-key.pem \
+--trusted-ca-file {{ project_config_path }}/ssl/ca.pem \
+--peer-trusted-ca-file {{ project_config_path }}/ssl/ca.pem
+
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

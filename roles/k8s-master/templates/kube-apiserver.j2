@@ -1,0 +1,23 @@
+KUBE_APISERVER_OPTS="--logtostderr=true \
+--v=4 \
+--etcd-servers={% for item in etcd_hosts %}https://{{ item.ip }}:2379{% if not loop.last %},{% endif %}{% endfor %} \
+--insecure-bind-address=127.0.0.1 \
+--bind-address={{ KUBE_APISERVER }} \
+--insecure-port=8080 \
+--secure-port=6443 \
+--advertise-address={{ KUBE_APISERVER }} \
+--allow-privileged=true \
+--service-cluster-ip-range={{ service_cluster_ip_range }} \
+--enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,NodeRestriction \
+--authorization-mode=RBAC,Node \
+--kubelet-https=true \
+--enable-bootstrap-token-auth \
+--token-auth-file={{ project_config_path }}/cfg/token.csv \
+--service-node-port-range=30000-50000 \
+--tls-cert-file={{ project_config_path }}/ssl/server.pem  \
+--tls-private-key-file={{ project_config_path }}/ssl/server-key.pem \
+--client-ca-file={{ project_config_path }}/ssl/ca.pem \
+--service-account-key-file={{ project_config_path }}/ssl/ca-key.pem \
+--etcd-cafile={{ project_config_path }}/ssl/ca.pem \
+--etcd-certfile={{ project_config_path }}/ssl/server.pem \
+--etcd-keyfile={{ project_config_path }}/ssl/server-key.pem"

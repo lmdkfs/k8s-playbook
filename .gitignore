@@ -1,0 +1,6 @@
+*.kubeconfig
+*.json
+*.pem
+*.csr
+*.log
+*.csv

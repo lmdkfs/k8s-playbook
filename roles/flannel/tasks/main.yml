@@ -1,0 +1,72 @@
+---
+# tasks file for flannel
+- name: copy server.pem server-key.pem ca.pem ca-key.pem to etcd nodes
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{ item }}"
+    dest: "{{ project_config_path }}/ssl/{{ item }}"
+    mode: 0755
+  loop:
+    - server.pem
+    - server-key.pem
+    - ca.pem
+    - ca-key.pem
+  tags:
+    - flannel
+
+- name: copy flannel
+  get_url:
+    url: "{{ repo_address }}/flannel/{{ flannel_version }}/{{ item }}"
+    dest: "{{ project_bin_path }}/{{ item }}"
+    mode: 0755
+    timeout: 120
+  loop:
+    - flanneld
+    - mk-docker-opts.sh
+  tags:
+    - flannel
+
+- name: copy flanneld config
+  template:
+    src: flanneld.j2
+    dest: "{{ project_config_path }}/cfg/flanneld"
+    mode: 0755
+  tags:
+    - flannel
+    - flannel-zrq
+
+- name: copy flanneld docker service
+  template:
+    src: flanneld.service.j2
+    dest: "/usr/lib/systemd/system/flanneld.service"
+    mode: 0644
+  tags:
+    - flannel
+    - flannel-zrq
+
+- name: modify docker.service add Enviromentfile
+  lineinfile:
+    dest: /usr/lib/systemd/system/docker.service
+    insertbefore: '^ExecStart'
+    line: 'EnvironmentFile=/run/flannel/subnet.env'
+  tags:
+    - flannel
+
+- name: systemd reload configs
+  systemd:
+    daemon_reload: yes
+  tags:
+    - flannel
+
+- name: start flannel
+  systemd:
+    name: flanneld
+    state: started
+  tags:
+    - flannel
+
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+  tags:
+    - flannel

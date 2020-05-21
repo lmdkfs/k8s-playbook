@@ -1,0 +1,49 @@
+---
+# tasks file for docker
+- name: yum install
+  yum:
+    name: yum-utils
+    state: latest
+- name: Add repository
+  yum_repository:
+    name: docker-ce
+    description: docker-ce
+    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+    enabled: 1
+    gpgcheck: 1
+    gpgkey: https://download.docker.com/linux/centos/gpg
+
+- name: yum install
+  yum:
+    name: '{{ packages }}'
+    state: latest
+  vars:
+    packages: "{{ pkgs }}"
+
+- name: 创建docker 数据目录
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    mode: 0755
+  loop: "{{ directorys }}"
+
+- name:  修改 docker 路径
+  lineinfile:
+    path: /lib/systemd/system/docker.service
+    regexp: '^ExecStart='
+    line: 'ExecStart=/usr/bin/dockerd --data-root={{ docker_data_path }}'
+
+- name: 修改daemon.json
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+
+
+- name: force systemd to reread configs
+  systemd:
+    daemon_reload: yes
+
+- name: 启动docker
+  systemd:
+    name: docker
+    state: started

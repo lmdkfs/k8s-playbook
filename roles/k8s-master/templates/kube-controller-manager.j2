@@ -1,0 +1,11 @@
+KUBE_CONTROLLER_MANAGER_OPTS="--logtostderr=true \
+--v=4 \
+--master=127.0.0.1:8080 \
+--leader-elect=true \
+--bind-address=0.0.0.0 \
+--service-cluster-ip-range={{ service_cluster_ip_range }} \
+--cluster-name=kubernetes \
+--cluster-signing-cert-file={{ project_config_path }}/ssl/ca.pem \
+--cluster-signing-key-file={{ project_config_path }}/ssl/ca-key.pem  \
+--service-account-private-key-file={{ project_config_path }}/ssl/ca-key.pem \
+--root-ca-file={{ project_config_path }}/ssl/ca.pem"

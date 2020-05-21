@@ -1,0 +1,6 @@
+---
+# tasks file for test
+- name: 
+  debug:
+    msg: "{{ role_path.split('/')[:-2]| join('/') }}/files"
+

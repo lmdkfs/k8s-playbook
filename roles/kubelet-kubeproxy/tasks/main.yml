@@ -1,0 +1,81 @@
+---
+# tasks file for kubelet-kubeproxy
+- name: copy kube-proxy-key.pem, kube-proxy.pem
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{item}}"
+    dest: "{{ project_config_path }}/ssl/{{ item }}"
+    mode: 0644
+  loop:
+    - kube-proxy-key.pem
+    - kube-proxy.pem
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node
+
+- name: copy bootstrap.kubeconfig and kube-proxy.kubeconfig
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/config/{{ item }}"
+    dest: "{{ project_config_path }}/cfg/{{ item }}"
+    mode: 0644
+  loop:
+    - bootstrap.kubeconfig
+    - kube-proxy.kubeconfig
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node
+
+- name: copy kube-proxy kubelet to node
+  get_url:
+    url: "{{ repo_address }}/kubernetes/{{k8s_version}}/server/bin/{{item}}"
+    dest: "{{ project_bin_path }}/{{item}}"
+    mode: 0755
+  loop:
+    - kubelet
+    - kube-proxy
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node
+
+- name: copy node config
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ project_config_path }}/cfg/{{item}}"
+    mode: 0644
+  loop:
+    - KubeletConfiguration.yaml
+    - KubeProxyConfiguration.yaml
+    - kubelet
+    - kube-proxy
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node
+
+- name: copy node service
+  template:
+    src: "{{item}}.service.j2"
+    dest: "/usr/lib/systemd/system/{{item}}.service"
+    mode: 0755
+  loop:
+    - kubelet
+    - kube-proxy
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node
+
+- name: systemd reread configs
+  systemd:
+    daemon_reload: yes
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node
+
+- name: start kubelet and kube-proxy
+  systemd:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - kubelet
+    - kube-proxy
+  when: ansible_ssh_host != KUBE_APISERVER
+  tags:
+    - k8s-node

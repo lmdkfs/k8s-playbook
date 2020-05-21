@@ -1,0 +1,82 @@
+---
+# tasks file for init-server
+- name: pam_limits hard and soft
+  pam_limits:
+    domain: "*"
+    limit_type: "{{ item }}"
+    limit_item: nofile
+    value: 65535
+  loop:
+    - hard
+    - soft
+
+- name: stop firewalled
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+    daemon_reload: yes
+
+- name: Remove swapfile from /etc/fstab
+  mount:
+    name: swap
+    fstype: swap
+    state: absent
+
+- name: Disable swap
+  shell: swapoff -a
+
+- name: Disable SELinux
+  selinux:
+    state: disabled
+    
+- name: install packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - ntp
+    - gcc
+    - libffi-devel
+    - python-devel
+    - openssl-devel
+    - unzip
+    - telnet
+    - wget
+    - vim
+    - ipvsadm
+- name: makedirs data packages scripts
+  file: 
+    path: '/data/{{item}}'
+    state: directory
+    mode: 0755
+  loop:
+    - packages
+    - scripts
+- name: create ssl directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    recurse: yes
+  loop:
+    - "{{ gen_ssl_path }}"
+    - /data/packages
+    - /data/scripts
+    - "{{ project_bin_path }}"
+    - "{{ project_config_path }}/ssl"
+    - "{{ project_config_path }}/cfg"
+
+- name: optimization sshd
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '{{item.key}}'
+    line: '{{item.value}}'
+  loop:
+    - { key: '#UseDNS yes', value: 'UseDNS no'}
+    - { key: 'GSSAPIAuthentication yes', value: 'GSSAPIAuthentication no'}
+    - { key: '#ClientAliveInterval 0', value: 'ClientAliveInterval 60'}
+    - { key: '#ClientAliveCountMax 3', value: 'ClientAliveCountMax 10'}
+  notify:
+    - restart sshd
+

@@ -1,0 +1,53 @@
+##dokcer
+#
+docker_data_path: /data/docker-data
+directorys:
+  - name: docker-data-path
+    value: "{{ docker_data_path }}"
+  - name: docker-daemon-path
+    value: /etc/docker
+
+pkgs:
+  - yum-utils
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+
+###
+
+repo_address: http://172.16.26.1:88
+KUBE_APISERVER: 172.16.26.156
+
+etcd_hosts:
+  - name: etcd01
+    ip: 172.16.26.156
+  - name: etcd02
+    ip: 172.16.26.157
+  - name: etcd03
+    ip: 172.16.26.158
+etcd_cluster_data_dir: /data/etcd-data
+etcd_version: v3.3.21
+network: 172.68.0.0/16
+
+kube_api_cluster_service_ip: 10.254.0.1
+BOOTSTRAP_TOKEN: 0f7b180f3712121979fb8a5981cde7a2
+gen_ssl_path: /data/ssl
+
+project_config_path: /etc/kubernetes
+project_bin_path: /usr/local/bin
+
+NODE_ADDRESS: "{{ ansible_default_ipv4.address }}"
+
+
+DNS_SERVER_IP: 10.254.0.2
+kube_api_cluster_service_ip: 10.254.0.1
+service_cluster_ip_range: 10.254.0.0/16
+k8s_version: v1.18.2
+
+# flannel
+flannel_version: v0.12.0
+
+infra_container_image: registry.cn-hangzhou.aliyuncs.com/google-containers/pause-amd64:3.2
+#
+#
+

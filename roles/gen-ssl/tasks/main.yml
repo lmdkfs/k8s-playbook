@@ -1,0 +1,83 @@
+---
+# tasks file for gen-ssl
+- name: judge os system
+  local_action: shell uname
+  register: osname
+  run_once: true
+  become: no
+  tags:
+    - gen-ssl
+
+- name: download cfssl tools for Linux OS
+  local_action:
+    module: get_url
+    url: "{{ repo_address }}/cfssl/{{ item.name }}"
+    dest: "/usr/local/bin/{{ item.value }}"
+    mode: 0755
+    timeout: 120
+  loop:
+    - {name: 'cfssl_linux-amd64', value: 'cfssl'}
+    - {name: 'cfssljson_linux-amd64', value: 'cfssljson'}
+    - {name: 'cfssl-certinfo_linux-amd64', value: 'cfssl-certinfo'}
+  become: no
+  run_once: true
+  when: osname.stdout == "Linux"
+  tags:
+    - gen-ssl
+
+- name: download cfssl tools for Mac OS
+  local_action:
+    module: homebrew
+    name: cfssl
+    state: present
+  become: no
+  run_once: true
+  when: osname.stdout == "Darwin"
+  tags:
+    - gen-ssl
+
+- name: copy ca-config.json ca-csr server-csr admin-csr kube-proxy-csr
+  local_action:
+    module: template
+    src: "{{ item }}.j2"
+    dest: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{ item }}.json"
+    mode: 0644
+  loop:
+    - ca-config
+    - ca-csr
+    - server-csr
+    - admin-csr
+    - kube-proxy-csr
+  become: no
+  run_once: true
+  tags:
+    - gen-ssl
+
+- name: gennerate keys
+  shell: "{{ item.value }} >> {{ item.name }}.log"
+  args:
+    chdir: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/"
+    creates: "{{ item.name }}.log"
+  loop:
+    - { name: "ca", value: "cfssl gencert -initca ca-csr.json | cfssljson -bare ca -" }
+    - { name: "server", value: "cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes server-csr.json | cfssljson -bare server" }
+    - { name: "admin", value: "cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes admin-csr.json | cfssljson -bare admin" }
+    - { name: "kube-proxy", value: "cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes kube-proxy-csr.json | cfssljson -bare kube-proxy" }
+  environment:
+    PATH: /usr/local/bin:{{ ansible_env.PATH }}
+  become: no
+  run_once: true
+  connection: local
+  tags:
+    - gen-ssl
+
+- name: gen  token.csv
+  local_action:
+    module: template
+    src: token.csv.j2
+    dest: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl//token.csv"
+    mode: 0644
+  become: no
+  run_once: true
+  tags:
+    - gen-ssl

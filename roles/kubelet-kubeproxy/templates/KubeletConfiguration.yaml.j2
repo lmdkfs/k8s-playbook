@@ -1,0 +1,13 @@
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+address: {{ NODE_ADDRESS }}
+hostname-override: {{ NODE_ADDRESS }}
+kubeconfig: {{ project_config_path }}/cfg/kubelet.kubeconfig
+bootstrap-kubeconfig: {{ project_config_path }}/cfg/bootstrap.kubeconfig
+cert-dir: {{ project_config_path }}/ssl
+# allow-privileged: true
+cluster-dns: {{ DNS_SERVER_IP }}
+cluster-domain: cluster.local
+fail-swap-on: false
+pod-infra-container-image: {{ infra_container_image }}
+

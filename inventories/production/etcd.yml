@@ -1,0 +1,4 @@
+[etcd]
+etcd01 ansible_host=172.16.26.156
+etcd02 ansible_host=172.16.26.157
+etcd03 ansible_host=172.16.26.158

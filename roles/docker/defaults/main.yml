@@ -1,0 +1,13 @@
+---
+# defaults file for docker
+docker_data_path: /data/docker-data
+directorys:
+  - name: docker-data-path
+    value: "{{ docker_data_path }}"
+  - name: docker-daemon-path
+    value: /etc/docker
+pkgs:
+  - yum-utils
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io

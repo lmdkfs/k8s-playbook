@@ -1,0 +1,100 @@
+---
+# tasks file for etcd
+- name: create ssl directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    recurse: yes
+  loop:
+    - "{{etcd_cluster_data_dir}}"
+  tags:
+    - etcd
+    - zrq-etcd
+
+- name: copy server.pem server-key.pem ca.pem ca-key.pem to etcd nodes
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{ item }}"
+    dest: "{{ project_config_path }}/ssl/{{ item }}"
+    mode: 0755
+  loop:
+    - server.pem
+    - server-key.pem
+    - ca.pem
+    - ca-key.pem
+  tags:
+    - etcd
+    - zrq-etcd
+- name: copy etcd service
+  template:
+    src: etcd.service.j2
+    dest: /usr/lib/systemd/system/etcd.service
+    mode: 0755
+  tags:
+    - etcd
+
+- name: just force systemd to reread configs (2.4 and above)
+  systemd: daemon_reload=yes
+  tags:
+    - etcd
+
+- name: copy etcd
+  get_url:
+    url: "{{ repo_address }}/etcd/{{ etcd_version }}/{{ item.name }}"
+    dest: "{{ project_bin_path }}/{{ item.value }}"
+    mode: 0755
+    timeout: 150
+  loop:
+    - { name: 'etcd', value: 'etcd' }
+    - { name: 'etcdctl', value: 'etcdctl' }
+      # when: etcd_list[inventory_hostname] | default ('False') in etcd_list.values() | list
+  tags:
+    - etcd-config
+    - etcd
+    - zrq-etcd-copy
+
+- name: start etcd
+  systemd:
+    name: etcd
+    state: started
+    daemon_reload: yes
+  tags:
+    - start-etcd
+    - etcd
+
+- name: add /data/kubernetes/bin to PATH
+  blockinfile:
+    path: /etc/profile
+    block: |
+      export PATH={{ project_bin_path }}:$PATH
+    marker: "# {mark} ANSIBLE MANAGED BLOCK ADD K8S AND ETCD  ENV"
+  become: true
+  tags:
+    - addenv
+    - etcd
+- name: 添加 etcdctl 别名
+  blockinfile:
+    path: /root/.bashrc
+    block: |
+      alias etcdctl='etcdctl --endpoints={% for item in etcd_hosts %}https://{{ item.ip }}:2379{% if not loop.last %},{% endif %}{% endfor %} --ca-file={{ project_config_path }}/ssl/ca.pem --key-file={{ project_config_path }}/ssl/server-key.pem --cert-file={{ project_config_path }}/ssl/server.pem'
+    marker: "#{mark} add etcdctl to bashrc"
+  tags:
+    - etcd
+
+
+- name: copy add network sh
+  template:
+    src: add_network_to_etcd.j2
+    dest: "{{ project_bin_path }}/add_network_to_etcd.sh"
+    mode: 0755
+  tags:
+    - etcd
+
+- name: create network in etcd
+  shell: /bin/bash add_network_to_etcd.sh
+  args:
+    chdir: "{{ project_bin_path }}"
+    executable: /bin/bash
+  run_once: true
+  tags:
+    - etcd

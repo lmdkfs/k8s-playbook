@@ -1,0 +1,8 @@
+---
+# handlers file for init-server
+- name: restart sshd
+  systemd: state=restarted name=sshd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+- name: restart sshd
+  service: state=restarted name=sshd
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"

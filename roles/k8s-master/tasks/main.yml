@@ -1,0 +1,179 @@
+---
+# tasks file for k8s-master
+- name: copy server.pem server-key.pem ca.pem ca-key.pem to etcd nodes
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{ item }}"
+    dest: "{{ project_config_path }}/ssl/{{ item }}"
+    mode: 0755
+  loop:
+    - server.pem
+    - server-key.pem
+    - ca.pem
+    - ca-key.pem
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-zrq
+- name: copy keys to ssl temp directory
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{ item }}"
+    dest: "{{ gen_ssl_path }}/{{ item }}"
+    mode: 0755
+  loop:
+    - ca.pem
+    - kube-proxy.pem
+    - kube-proxy-key.pem
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-zrq-key
+
+- name: copy master file
+  get_url:
+    url: "{{ repo_address }}/kubernetes/{{ k8s_version }}/server/bin/{{ item }}"
+    dest: "{{ project_bin_path }}/{{ item }}"
+    mode: 0755
+    timeout: 150
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kubectl
+    - kube-scheduler
+
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-zrq
+- name: add kubectl to  profile
+  blockinfile:
+    path: /etc/profile
+    block: |
+      export PATH={{ project_bin_path }}:$PATH
+    marker: "# {mark} ANSIBLE MANAGED BLOCK kubectl profile"
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-zrq
+    - k8s-profile
+
+- name: copy bootstrapping token.csv
+  copy:
+    src: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/token.csv"
+    dest: "{{ project_config_path }}/cfg/token.csv"
+    mode: 0644
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+
+- name: gennerate kube-apiserver config
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ project_config_path }}/cfg/{{ item }}"
+    mode: 0644
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-zrq
+
+- name: copy kube-apiserver.service
+  template:
+    src: "{{ item }}.service.j2"
+    dest: "/usr/lib/systemd/system/{{ item }}.service"
+    mode: 0755
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-zrq
+
+- name: systemd reread configs
+  systemd:
+    daemon_reload: yes
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+
+- name: start kube-apiserver kube-controller-manager kube-scheduler
+  systemd:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+
+
+- name: copy kube-proxy.kubeconfig.sh
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ gen_ssl_path}}/{{ item }}"
+    mode: 0755
+  loop:
+    - bootstrap.kubeconfig.sh
+    - kube-proxy.kubeconfig.sh
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+
+- name: gennerate bootstrap.kubeconfig and kube-proxy.kubeconfig
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ gen_ssl_path }}"
+    executable: /bin/bash
+  loop:
+    - "sh bootstrap.kubeconfig.sh >> bootstrap.kubeconfig.log "
+    - "sh kube-proxy.kubeconfig.sh >> kube-proxy.kubeconfig.log "
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+
+- name: fetch bootstrap.kubeconfig and kube-proxy.kubeconfig  k8s playbook files
+  fetch:
+    src: "{{ gen_ssl_path }}/{{item}}"
+    dest: "{{ role_path.split('/')[:-2]| join('/') }}/files/config/{{item}}"
+    flat: yes
+  loop:
+    - bootstrap.kubeconfig
+    - kube-proxy.kubeconfig
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - k8s-master-zrq
+- name:  开启bootstrapper认证
+  script: "{{ role_path }}/files/create_clusterrolebinding.sh"
+  environment:
+    KUBERNETES_MASTER: 127.0.0.1:8080
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
+    - zrqtest
+
+- name: check k8s componentstatuses
+  shell: |
+    {{ project_bin_path }}/kubectl get componentstatuses
+  args:
+    chdir: "{{ project_bin_path }}"
+  when: ansible_ssh_host == KUBE_APISERVER
+  register: componentstatuses_result
+  environment:
+    KUBERNETES_MASTER: 127.0.0.1:8080
+  tags:
+    - k8s-master
+
+- name: print componentstatuses
+  debug:
+    var: componentstatuses_result
+    verbosity: 2
+  when: ansible_ssh_host == KUBE_APISERVER
+  tags:
+    - k8s-master
