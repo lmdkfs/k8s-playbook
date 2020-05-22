@@ -1,0 +1,72 @@
+---
+# tasks file for create-user-kubeconfig
+- name: create newuser-csr.json file
+  local_action:
+    module: template
+    src: newuser-csr.json.j2
+    dest: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/{{ username }}-csr.json"
+    mode: 0644
+  become: no
+  
+- name: create newuser pem
+  shell: |
+    cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes {{ username }}-csr.json | cfssljson -bare {{ username }} >> {{ username }}.log
+  args:
+    chdir: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/"
+    creates: "{{ username }}.log"
+  environment:
+    PATH: /usr/local/bin:{{ ansible_env.PATH }}
+  become: no
+  connection: local
+
+- name: 设置集群参数
+  shell: |
+    kubectl config set-cluster kubernetes \
+    --certificate-authority=ca.pem \
+    --embed-certs=true \
+    --server=https://{{ KUBE_APISERVER }}:6443 \
+    --kubeconfig={{ username }}.kubeconfig
+  args:
+    chdir: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/"
+  environment:
+    PATH: /usr/local/bin:{{ ansible_env.PATH }}
+  become: no
+  connection: local
+
+- name: 设置客户端认证参数
+  shell: |
+    kubectl config set-credentials {{ username }} \
+    --client-certificate={{ username }}.pem \
+    --client-key={{ username }}-key.pem \
+    --embed-certs=true \
+    --kubeconfig={{ username }}.kubeconfig
+  args:
+    chdir: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/"
+  environment:
+    PATH: /usr/local/bin:{{ ansible_env.PATH }}
+  become: no
+  run_once: true
+  connection: local
+- name: 设置上下文参数
+  shell: |
+    kubectl config set-context kubernetes \
+    --cluster=kubernetes \
+    --user={{ username }} \
+    --namespace={{ namespace | default("default")}} \
+    --kubeconfig={{ username }}.kubeconfig
+  args:
+    chdir: "{{ role_path.split('/')[:-2]| join('/') }}/files/ssl/"
+  environment:
+    PATH: /usr/local/bin:{{ ansible_env.PATH }}
+  become: no
+  run_once: true
+  connection: local
+
+  #- name:  添加用户权限
+  #  shell: |
+  #    kubectl create rolebinding {{ username }}-admin-binding --clusterrole=admin --user={{ username }} --namespace={{ namespace }}
+  #  environment:
+  #    PATH: /usr/local/bin:{{ ansible_env.PATH }}
+  #  become: no
+  #  run_once: true
+  #  connection: local
