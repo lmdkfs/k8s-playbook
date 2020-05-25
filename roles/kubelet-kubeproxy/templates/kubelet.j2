@@ -5,4 +5,5 @@ KUBELET_OPTS="--logtostderr=true \
 --bootstrap-kubeconfig={{ project_config_path }}/cfg/bootstrap.kubeconfig \
 --config {{ project_config_path }}/cfg/KubeletConfiguration.yaml \
 --cert-dir={{ project_config_path }}/ssl \
+--pod-infra-container-image={{ infra_container_image }} \
 --fail-swap-on=false"

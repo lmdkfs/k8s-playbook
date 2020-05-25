@@ -46,7 +46,7 @@ k8s_version: v1.18.2
 # flannel
 flannel_version: v0.12.0
 
-infra_container_image: registry.cn-hangzhou.aliyuncs.com/google-containers/pause-amd64:3.2
+infra_container_image: registry.aliyuncs.com/google_containers/pause:3.2
 #
 #
 
