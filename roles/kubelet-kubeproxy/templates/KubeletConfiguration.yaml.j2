@@ -1,12 +1,26 @@
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 address: {{ NODE_ADDRESS }}
-hostname-override: {{ NODE_ADDRESS }}
 kubeconfig: {{ project_config_path }}/cfg/kubelet.kubeconfig
-bootstrap-kubeconfig: {{ project_config_path }}/cfg/bootstrap.kubeconfig
-cert-dir: {{ project_config_path }}/ssl
-# allow-privileged: true
-cluster-dns: {{ DNS_SERVER_IP }}
-cluster-domain: cluster.local
-fail-swap-on: false
+clusterDNS:
+  - {{ DNS_SERVER_IP }}
+clusterDomain: cluster.local
+FailSwapOn: false
 
+# 身份验证
+authentication:
+  anonymous:
+    enabled: false
+
+  x509:
+    clientCAFile: {{ project_config_path }}/ssl/ca.pem
+  webhook:
+    enabled: true
+    cacheTTL: 2m0s
+
+# 授权
+authorization:
+  mode: Webhook
+  webhook:
+    cacheAuthorizedTTL: 5m0s
+    cacheUnauthorizedTTL: 30s

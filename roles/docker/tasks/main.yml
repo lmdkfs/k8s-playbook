@@ -8,10 +8,11 @@
   yum_repository:
     name: docker-ce
     description: docker-ce
-    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+    #baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+    baseurl: http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
     enabled: 1
-    gpgcheck: 1
-    gpgkey: https://download.docker.com/linux/centos/gpg
+    #gpgcheck: 1
+    #gpgkey: https://download.docker.com/linux/centos/gpg
 
 - name: yum install
   yum:

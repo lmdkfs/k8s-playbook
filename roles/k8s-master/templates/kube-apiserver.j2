@@ -11,7 +11,7 @@ KUBE_APISERVER_OPTS="--logtostderr=true \
 --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,NodeRestriction \
 --authorization-mode=RBAC,Node \
 --kubelet-https=true \
---enable-bootstrap-token-auth \
+--enable-bootstrap-token-auth=true \
 --token-auth-file={{ project_config_path }}/cfg/token.csv \
 --service-node-port-range=30000-50000 \
 --tls-cert-file={{ project_config_path }}/ssl/server.pem  \
@@ -20,4 +20,9 @@ KUBE_APISERVER_OPTS="--logtostderr=true \
 --service-account-key-file={{ project_config_path }}/ssl/ca-key.pem \
 --etcd-cafile={{ project_config_path }}/ssl/ca.pem \
 --etcd-certfile={{ project_config_path }}/ssl/server.pem \
---etcd-keyfile={{ project_config_path }}/ssl/server-key.pem"
+--etcd-keyfile={{ project_config_path }}/ssl/server-key.pem \
+--audit-log-truncate-enabled=true \
+--audit-log-maxsize=100 \
+--audit-log-maxbackup=3 \
+--audit-log-maxage=3 \
+--audit-log-path=/var/log/kubernetes/k8s-audit.log"

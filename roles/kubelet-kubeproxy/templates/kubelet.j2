@@ -3,7 +3,6 @@ KUBELET_OPTS="--logtostderr=true \
 --hostname-override={{ NODE_ADDRESS }} \
 --kubeconfig={{ project_config_path }}/cfg/kubelet.kubeconfig \
 --bootstrap-kubeconfig={{ project_config_path }}/cfg/bootstrap.kubeconfig \
---config {{ project_config_path }}/cfg/KubeletConfiguration.yaml \
+--config={{ project_config_path }}/cfg/KubeletConfiguration.yaml \
 --cert-dir={{ project_config_path }}/ssl \
---pod-infra-container-image={{ infra_container_image }} \
---fail-swap-on=false"
+--pod-infra-container-image={{ infra_container_image }}"

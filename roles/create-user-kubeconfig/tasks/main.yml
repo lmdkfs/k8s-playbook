@@ -65,7 +65,7 @@
 
 - name:  添加用户权限
   shell: |
-    kubectl create rolebinding {{ username }}-admin-binding --clusterrole=admin --user={{ username }} --namespace={{ namespace }}
+    kubectl create clusterrolebinding {{ username }}-admin-binding --clusterrole=cluster-admin --user={{ username }} 
   environment:
     PATH: /usr/local/bin:{{ ansible_env.PATH }}
     KUBERNETES_MASTER: 127.0.0.1:8080
