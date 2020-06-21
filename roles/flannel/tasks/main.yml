@@ -51,6 +51,12 @@
   tags:
     - flannel
 
+- name: modify docker.service
+  lineinfile:
+    dest: /usr/lib/systemd/system/docker.service
+    regexp: '^ExecStart'
+    line: 'ExecStart=/usr/bin/dockerd --data-root=/data/docker-data $DOCKER_NETWORK_OPTIONS'
+
 - name: systemd reload configs
   systemd:
     daemon_reload: yes
