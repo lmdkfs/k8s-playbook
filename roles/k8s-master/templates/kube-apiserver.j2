@@ -14,6 +14,8 @@ KUBE_APISERVER_OPTS="--logtostderr=true \
 --enable-bootstrap-token-auth=true \
 --token-auth-file={{ project_config_path }}/cfg/token.csv \
 --service-node-port-range=30000-50000 \
+--kubelet-client-certificate={{ project_config_path }}/ssl/server.pem \
+--kubelet-client-key={{ project_config_path }}/ssl/server-key.pem \
 --tls-cert-file={{ project_config_path }}/ssl/server.pem  \
 --tls-private-key-file={{ project_config_path }}/ssl/server-key.pem \
 --client-ca-file={{ project_config_path }}/ssl/ca.pem \
@@ -21,6 +23,12 @@ KUBE_APISERVER_OPTS="--logtostderr=true \
 --etcd-cafile={{ project_config_path }}/ssl/ca.pem \
 --etcd-certfile={{ project_config_path }}/ssl/server.pem \
 --etcd-keyfile={{ project_config_path }}/ssl/server-key.pem \
+--requestheader-client-ca-file={{ project_config_path }}/ssl/ca.pem \
+--requestheader-extra-headers-prefix=X-Remote-Extra- \
+--requestheader-group-headers=X-Remote-Group \
+--requestheader-username-headers=X-Remote-User \
+--proxy-client-cert-file={{ project_config_path }}/ssl/metrics-server.pem \
+--proxy-client-key-file=/opt/kubernetes/ssl/metrics-server-key.pem \
 --audit-log-truncate-enabled=true \
 --audit-log-maxsize=100 \
 --audit-log-maxbackup=3 \
