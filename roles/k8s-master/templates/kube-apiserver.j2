@@ -28,7 +28,7 @@ KUBE_APISERVER_OPTS="--logtostderr=true \
 --requestheader-group-headers=X-Remote-Group \
 --requestheader-username-headers=X-Remote-User \
 --proxy-client-cert-file={{ project_config_path }}/ssl/metrics-server.pem \
---proxy-client-key-file=/opt/kubernetes/ssl/metrics-server-key.pem \
+--proxy-client-key-file={{ project_config_path }}/ssl/metrics-server-key.pem \
 --audit-log-truncate-enabled=true \
 --audit-log-maxsize=100 \
 --audit-log-maxbackup=3 \
