@@ -10,6 +10,8 @@
     - server-key.pem
     - ca.pem
     - ca-key.pem
+    - metrics-server-key.pem
+    - metrics-server.pem
   when: ansible_ssh_host == KUBE_APISERVER
   tags:
     - k8s-master
